@@ -93,6 +93,11 @@ struct NoteTextEditor: NSViewRepresentable {
             isUpdatingFromUI = false
         }
 
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            parent.proxy.updateSelection(textView.selectedRange())
+        }
+
         func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
             if let url = link as? URL {
                 NSWorkspace.shared.open(url)

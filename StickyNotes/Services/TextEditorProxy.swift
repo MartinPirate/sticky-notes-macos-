@@ -4,9 +4,35 @@ import AppKit
 final class TextEditorProxy {
     weak var textView: NSTextView?
 
+    /// Tracks the last known selection so formatting works even after
+    /// a SwiftUI button click steals first responder from NSTextView.
+    var lastSelectedRange: NSRange = NSRange(location: 0, length: 0)
+
+    func updateSelection(_ range: NSRange) {
+        lastSelectedRange = range
+    }
+
+    // MARK: - Restore focus and get effective range
+
+    private func restoreFocusAndRange() -> NSRange? {
+        guard let textView else { return nil }
+        textView.window?.makeFirstResponder(textView)
+
+        // If the textView currently has a selection, use it.
+        // Otherwise fall back to the last saved selection.
+        let current = textView.selectedRange()
+        let effective = current.length > 0 ? current : lastSelectedRange
+        if effective.length > 0 {
+            textView.setSelectedRange(effective)
+        }
+        return effective
+    }
+
+    // MARK: - Formatting
+
     func toggleBold() {
         guard let textView, let storage = textView.textStorage else { return }
-        let range = textView.selectedRange()
+        guard let range = restoreFocusAndRange() else { return }
         if range.length == 0 {
             toggleTypingAttribute(textView, trait: .boldFontMask)
             return
@@ -23,12 +49,13 @@ final class TextEditorProxy {
             storage.addAttribute(.font, value: newFont, range: attrRange)
         }
         storage.endEditing()
+        textView.setSelectedRange(range)
         notifyChange(textView)
     }
 
     func toggleItalic() {
         guard let textView, let storage = textView.textStorage else { return }
-        let range = textView.selectedRange()
+        guard let range = restoreFocusAndRange() else { return }
         if range.length == 0 {
             toggleTypingAttribute(textView, trait: .italicFontMask)
             return
@@ -45,12 +72,13 @@ final class TextEditorProxy {
             storage.addAttribute(.font, value: newFont, range: attrRange)
         }
         storage.endEditing()
+        textView.setSelectedRange(range)
         notifyChange(textView)
     }
 
     func toggleUnderline() {
         guard let textView, let storage = textView.textStorage else { return }
-        let range = textView.selectedRange()
+        guard let range = restoreFocusAndRange() else { return }
         if range.length == 0 {
             var attrs = textView.typingAttributes
             let current = (attrs[.underlineStyle] as? Int) ?? 0
@@ -65,12 +93,13 @@ final class TextEditorProxy {
             storage.addAttribute(.underlineStyle, value: newValue, range: attrRange)
         }
         storage.endEditing()
+        textView.setSelectedRange(range)
         notifyChange(textView)
     }
 
     func toggleStrikethrough() {
         guard let textView, let storage = textView.textStorage else { return }
-        let range = textView.selectedRange()
+        guard let range = restoreFocusAndRange() else { return }
         if range.length == 0 {
             var attrs = textView.typingAttributes
             let current = (attrs[.strikethroughStyle] as? Int) ?? 0
@@ -85,14 +114,17 @@ final class TextEditorProxy {
             storage.addAttribute(.strikethroughStyle, value: newValue, range: attrRange)
         }
         storage.endEditing()
+        textView.setSelectedRange(range)
         notifyChange(textView)
     }
 
     func toggleBulletList() {
         guard let textView else { return }
+        _ = restoreFocusAndRange()
         let text = textView.string as NSString
         let selectedRange = textView.selectedRange()
-        let lineRange = text.lineRange(for: selectedRange)
+        let effectiveRange = selectedRange.length > 0 ? selectedRange : lastSelectedRange
+        let lineRange = text.lineRange(for: effectiveRange)
         let lineText = text.substring(with: lineRange)
 
         let lines = lineText.components(separatedBy: "\n")
