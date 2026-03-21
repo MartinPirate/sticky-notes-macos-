@@ -2,32 +2,45 @@ import SwiftUI
 
 struct NoteCardView: View {
     let note: StickyNote
+    let isCollapsed: Bool
     let onOpen: () -> Void
     let onDelete: () -> Void
+    let onToggleCollapse: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(note.title)
-                .font(.system(size: 13, weight: .semibold))
-                .lineLimit(1)
-                .foregroundStyle(.primary)
+        VStack(alignment: .leading, spacing: isCollapsed ? 0 : 6) {
+            HStack {
+                Text(note.title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+                    .foregroundStyle(.primary)
 
-            if !note.preview.isEmpty {
-                Text(note.preview)
-                    .font(.system(size: 12))
-                    .lineLimit(3)
-                    .foregroundStyle(.secondary)
+                Spacer()
+
+                if !note.audioRecordings.isEmpty {
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.tertiary)
+                }
+
+                Text(note.modifiedAt.noteListFormatted)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
             }
 
-            Spacer(minLength: 4)
-
-            Text(note.modifiedAt.noteListFormatted)
-                .font(.system(size: 11))
-                .foregroundStyle(.tertiary)
+            if !isCollapsed {
+                if !note.preview.isEmpty {
+                    Text(note.preview)
+                        .font(.system(size: 12))
+                        .lineLimit(3)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 100, alignment: .topLeading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, isCollapsed ? 10 : 12)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(note.noteColor.backgroundColor(for: colorScheme))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .shadow(color: .black.opacity(0.08), radius: 2, x: 0, y: 1)

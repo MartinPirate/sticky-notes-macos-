@@ -8,6 +8,7 @@ struct NotesListView: View {
     @State private var searchText = ""
     @State private var noteToDelete: StickyNote?
     @State private var showDeleteConfirmation = false
+    @State private var isCollapsed = false
     @AppStorage("confirmBeforeDelete") private var confirmBeforeDelete = true
     @AppStorage("defaultColor") private var defaultColorRaw = NoteColor.yellow.rawValue
 
@@ -56,6 +57,19 @@ struct NotesListView: View {
 
             Spacer()
 
+            // Collapse/expand toggle
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isCollapsed.toggle()
+                }
+            } label: {
+                Image(systemName: isCollapsed ? "list.bullet" : "rectangle.grid.1x2")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .help(isCollapsed ? "Expanded View" : "Compact View")
+
             Button {
                 createNote()
             } label: {
@@ -93,12 +107,18 @@ struct NotesListView: View {
 
     private var notesList: some View {
         ScrollView {
-            LazyVStack(spacing: 8) {
+            LazyVStack(spacing: isCollapsed ? 4 : 8) {
                 ForEach(filteredNotes) { note in
                     NoteCardView(
                         note: note,
+                        isCollapsed: isCollapsed,
                         onOpen: { openNote(note) },
-                        onDelete: { requestDelete(note) }
+                        onDelete: { requestDelete(note) },
+                        onToggleCollapse: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isCollapsed.toggle()
+                            }
+                        }
                     )
                 }
             }
@@ -126,7 +146,6 @@ struct NotesListView: View {
     }
 
     private func openNoteWindow(_ id: UUID) {
-        // Use OpenWindow environment action via notification
         NotificationCenter.default.post(
             name: .openNoteWindow,
             object: nil,
@@ -145,7 +164,6 @@ struct NotesListView: View {
 
     private func deleteNote(_ note: StickyNote) {
         let noteID = note.id
-        // Close the floating window if open
         if let window = NSApplication.shared.windows.first(where: {
             $0.identifier?.rawValue == noteID.uuidString
         }) {
