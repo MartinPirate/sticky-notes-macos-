@@ -14,7 +14,12 @@ final class TextEditorProxy {
     var lastSelectedRange: NSRange = NSRange(location: 0, length: 0)
 
     func updateSelection(_ range: NSRange) {
-        lastSelectedRange = range
+        // Only save non-zero selections — when a toolbar button steals focus,
+        // the textView fires selectionDidChange with length 0, which would
+        // erase the range we need for formatting.
+        if range.length > 0 {
+            lastSelectedRange = range
+        }
     }
 
     // MARK: - Restore focus and get effective range
@@ -226,54 +231,68 @@ final class TextEditorProxy {
 
     // MARK: - Hidden/Spoiler Text
 
+    /// The hide color uses a solid block that works in both light and dark mode.
+    private static let hiddenBgColor = NSColor.labelColor
+    private static let hiddenFgColor = NSColor.labelColor
+
     func toggleHiddenText() {
         guard let textView, let storage = textView.textStorage else { return }
         guard let range = restoreFocusAndRange(), range.length > 0 else { return }
 
-        // Check if already hidden
+        // Check if already hidden by looking for our marker attribute
         var isHidden = false
-        storage.enumerateAttribute(.hiddenText, in: range) { value, _, stop in
-            if value as? Bool == true {
-                isHidden = true
-                stop.pointee = true
+        if range.location < storage.length {
+            let checkRange = NSRange(location: range.location, length: min(1, storage.length - range.location))
+            storage.enumerateAttribute(.hiddenText, in: checkRange) { value, _, stop in
+                if value as? Bool == true {
+                    isHidden = true
+                    stop.pointee = true
+                }
             }
         }
 
         storage.beginEditing()
         if isHidden {
-            // Reveal: remove hidden attribute, restore original color
+            // Reveal
             storage.removeAttribute(.hiddenText, range: range)
-            storage.addAttribute(.foregroundColor, value: NSColor.textColor, range: range)
             storage.removeAttribute(.backgroundColor, range: range)
+            storage.addAttribute(.foregroundColor, value: NSColor.textColor, range: range)
         } else {
-            // Hide: mark as hidden, set text color to match background
+            // Hide: solid colored block over the text
             storage.addAttribute(.hiddenText, value: true, range: range)
-            storage.addAttribute(.foregroundColor, value: NSColor.black, range: range)
-            storage.addAttribute(.backgroundColor, value: NSColor.black, range: range)
+            storage.addAttribute(.backgroundColor, value: Self.hiddenBgColor, range: range)
+            storage.addAttribute(.foregroundColor, value: Self.hiddenFgColor, range: range)
         }
         storage.endEditing()
-        textView.setSelectedRange(range)
+
+        // Deselect so the blue highlight doesn't reveal text
+        textView.setSelectedRange(NSRange(location: range.location + range.length, length: 0))
         notifyChange(textView)
     }
 
     /// Reveal hidden text at a click location
     func revealHiddenTextAt(characterIndex: Int) {
         guard let textView, let storage = textView.textStorage else { return }
-        let fullRange = NSRange(location: 0, length: storage.length)
+        guard characterIndex < storage.length else { return }
 
-        // Find the hidden text range containing this index
-        storage.enumerateAttribute(.hiddenText, in: fullRange) { value, attrRange, stop in
+        let checkRange = NSRange(location: characterIndex, length: 1)
+        var foundRange: NSRange?
+
+        storage.enumerateAttribute(.hiddenText, in: NSRange(location: 0, length: storage.length)) { value, attrRange, stop in
             guard value as? Bool == true,
                   NSLocationInRange(characterIndex, attrRange) else { return }
-
-            storage.beginEditing()
-            storage.removeAttribute(.hiddenText, range: attrRange)
-            storage.addAttribute(.foregroundColor, value: NSColor.textColor, range: attrRange)
-            storage.removeAttribute(.backgroundColor, range: attrRange)
-            storage.endEditing()
-            notifyChange(textView)
+            foundRange = attrRange
             stop.pointee = true
         }
+
+        guard let range = foundRange else { return }
+
+        storage.beginEditing()
+        storage.removeAttribute(.hiddenText, range: range)
+        storage.removeAttribute(.backgroundColor, range: range)
+        storage.addAttribute(.foregroundColor, value: NSColor.textColor, range: range)
+        storage.endEditing()
+        notifyChange(textView)
     }
 
     // MARK: - Private
