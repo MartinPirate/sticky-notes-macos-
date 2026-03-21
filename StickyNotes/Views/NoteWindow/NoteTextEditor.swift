@@ -14,7 +14,8 @@ struct NoteTextEditor: NSViewRepresentable {
         scrollView.borderType = .noBorder
         scrollView.drawsBackground = false
 
-        let textView = NSTextView()
+        let textView = ClickableTextView()
+        textView.proxy = proxy
         textView.delegate = context.coordinator
         textView.isRichText = true
         textView.allowsUndo = true
@@ -45,8 +46,6 @@ struct NoteTextEditor: NSViewRepresentable {
 
         scrollView.documentView = textView
         context.coordinator.textView = textView
-
-        // Wire up the proxy so toolbar can access this textView
         proxy.textView = textView
 
         return scrollView
@@ -56,7 +55,6 @@ struct NoteTextEditor: NSViewRepresentable {
         guard let textView = scrollView.documentView as? NSTextView else { return }
         textView.backgroundColor = backgroundColor
 
-        // Keep proxy reference current
         if proxy.textView !== textView {
             proxy.textView = textView
         }
@@ -109,5 +107,55 @@ struct NoteTextEditor: NSViewRepresentable {
             }
             return false
         }
+    }
+}
+
+// MARK: - Custom NSTextView for click handling
+
+final class ClickableTextView: NSTextView {
+    var proxy: TextEditorProxy?
+
+    override func mouseDown(with event: NSEvent) {
+        let point = convert(event.locationInWindow, from: nil)
+        let charIndex = characterIndexForInsertion(at: point)
+
+        if charIndex < string.count {
+            let text = string as NSString
+            let clickRange = NSRange(location: charIndex, length: 0)
+            let lineRange = text.lineRange(for: clickRange)
+            let lineText = text.substring(with: lineRange)
+
+            // Handle todo checkbox clicks (click near beginning of line)
+            if lineText.hasPrefix("☐ ") || lineText.hasPrefix("☑ ") {
+                let lineStartPoint = layoutManager!.boundingRect(
+                    forGlyphRange: NSRange(location: lineRange.location, length: 1),
+                    in: textContainer!
+                )
+                let relativeX = point.x - textContainerOrigin.x - lineStartPoint.origin.x
+                if relativeX < 20 {
+                    proxy?.toggleTodoAt(characterIndex: charIndex)
+                    return
+                }
+            }
+
+            // Handle hidden text reveal
+            if let storage = textStorage {
+                var isHidden = false
+                let attrRange = NSRange(location: charIndex, length: 1)
+                if attrRange.location + attrRange.length <= storage.length {
+                    storage.enumerateAttribute(.hiddenText, in: attrRange) { value, _, _ in
+                        if value as? Bool == true {
+                            isHidden = true
+                        }
+                    }
+                }
+                if isHidden {
+                    proxy?.revealHiddenTextAt(characterIndex: charIndex)
+                    return
+                }
+            }
+        }
+
+        super.mouseDown(with: event)
     }
 }

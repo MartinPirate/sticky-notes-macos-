@@ -6,6 +6,15 @@ struct StickyNotesApp: App {
     @State private var windowManager = WindowManager()
     @Environment(\.openWindow) private var openWindow
 
+    /// Single shared container so list + note windows share the same data
+    let sharedContainer: ModelContainer = {
+        do {
+            return try ModelContainer(for: StickyNote.self)
+        } catch {
+            fatalError("Failed to create ModelContainer: \(error)")
+        }
+    }()
+
     var body: some Scene {
         WindowGroup("Sticky Notes") {
             NotesListView()
@@ -16,7 +25,7 @@ struct StickyNotesApp: App {
                     }
                 }
         }
-        .modelContainer(for: StickyNote.self)
+        .modelContainer(sharedContainer)
         .defaultSize(width: 320, height: 500)
         .commands {
             CommandGroup(replacing: .newItem) {
@@ -50,7 +59,7 @@ struct StickyNotesApp: App {
                     .environment(windowManager)
             }
         }
-        .modelContainer(for: StickyNote.self)
+        .modelContainer(sharedContainer)
         .defaultSize(width: 300, height: 350)
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)

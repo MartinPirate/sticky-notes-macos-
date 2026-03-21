@@ -9,6 +9,8 @@ enum NoteColor: String, CaseIterable, Codable {
     case orange
     case gray
 
+    // MARK: - Light mode
+
     var background: Color {
         switch self {
         case .yellow: Color(hex: 0xFFF9B1)
@@ -18,18 +20,6 @@ enum NoteColor: String, CaseIterable, Codable {
         case .pink:   Color(hex: 0xF5C4D0)
         case .orange: Color(hex: 0xFDDCB5)
         case .gray:   Color(hex: 0xD9D9D9)
-        }
-    }
-
-    var darkBackground: Color {
-        switch self {
-        case .yellow: Color(hex: 0x4C4A17)
-        case .green:  Color(hex: 0x1E3A1E)
-        case .blue:   Color(hex: 0x1E2D3A)
-        case .purple: Color(hex: 0x2D1E3A)
-        case .pink:   Color(hex: 0x3A1E2D)
-        case .orange: Color(hex: 0x3A2D1E)
-        case .gray:   Color(hex: 0x2D2D2D)
         }
     }
 
@@ -45,15 +35,29 @@ enum NoteColor: String, CaseIterable, Codable {
         }
     }
 
+    // MARK: - Dark mode (Microsoft Sticky Notes actual dark values)
+
+    var darkBackground: Color {
+        switch self {
+        case .yellow: Color(hex: 0x7B7533)
+        case .green:  Color(hex: 0x3D6B3D)
+        case .blue:   Color(hex: 0x3B5E78)
+        case .purple: Color(hex: 0x5B4670)
+        case .pink:   Color(hex: 0x7B4058)
+        case .orange: Color(hex: 0x8B6535)
+        case .gray:   Color(hex: 0x555555)
+        }
+    }
+
     var darkToolbar: Color {
         switch self {
-        case .yellow: Color(hex: 0x3D3B12)
-        case .green:  Color(hex: 0x162E16)
-        case .blue:   Color(hex: 0x16232E)
-        case .purple: Color(hex: 0x23162E)
-        case .pink:   Color(hex: 0x2E1623)
-        case .orange: Color(hex: 0x2E2316)
-        case .gray:   Color(hex: 0x232323)
+        case .yellow: Color(hex: 0x6B6528)
+        case .green:  Color(hex: 0x335C33)
+        case .blue:   Color(hex: 0x314F65)
+        case .purple: Color(hex: 0x4D3A5E)
+        case .pink:   Color(hex: 0x6B354B)
+        case .orange: Color(hex: 0x78572B)
+        case .gray:   Color(hex: 0x474747)
         }
     }
 

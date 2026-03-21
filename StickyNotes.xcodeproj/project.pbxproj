@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0B7C6C5DC2A1CF6261B12919 /* AudioClipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95B31B727D6F6185EC084A4 /* AudioClipView.swift */; };
 		1CB95E103FB9210DFEBEB993 /* DateFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22253EDED58982293A39106F /* DateFormatting.swift */; };
+		22D4EA9CD3503AD33D946692 /* AudioRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE343E8B78ABF1CA38745D9C /* AudioRecorder.swift */; };
 		25F8D03BFFB6FB179A74167A /* WindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA4CAE13354C9E6012AA1457 /* WindowManager.swift */; };
 		2DF20E09E4B01844DBDD5D61 /* URLDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 815FBA6DADF12E5FC41F5DEF /* URLDetector.swift */; };
 		550F496734439B63A09B88EF /* ColorExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2297900470B900CA99A1EE23 /* ColorExtensions.swift */; };
@@ -45,9 +47,11 @@
 		AA4CAE13354C9E6012AA1457 /* WindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowManager.swift; sourceTree = "<group>"; };
 		AA8553FD88D4A235710062D6 /* StickyNotesApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StickyNotesApp.swift; sourceTree = "<group>"; };
 		AC75B15DB7993FBDBF019F5C /* NoteColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteColor.swift; sourceTree = "<group>"; };
+		BE343E8B78ABF1CA38745D9C /* AudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorder.swift; sourceTree = "<group>"; };
 		D7217EF20296DFC6B0BC4020 /* FormattingBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormattingBar.swift; sourceTree = "<group>"; };
 		D8826B7F98B8949FE9E61E5A /* StickyNote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StickyNote.swift; sourceTree = "<group>"; };
 		EE586DF508DB92410B58BAD5 /* NoteWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteWindowView.swift; sourceTree = "<group>"; };
+		F95B31B727D6F6185EC084A4 /* AudioClipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioClipView.swift; sourceTree = "<group>"; };
 		FEF7E171627D81943B9AF5E1 /* WindowAccessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowAccessor.swift; sourceTree = "<group>"; };
 		FFA10ED573A90AB22C21C27D /* NotesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesListView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -123,6 +127,7 @@
 		9E4B0C01254D0EE8CC0B5A5C /* NoteWindow */ = {
 			isa = PBXGroup;
 			children = (
+				F95B31B727D6F6185EC084A4 /* AudioClipView.swift */,
 				88FA0193B36885EB9821C43D /* ColorPickerMenu.swift */,
 				D7217EF20296DFC6B0BC4020 /* FormattingBar.swift */,
 				5F31518A3998CC795578F7B8 /* NoteTextEditor.swift */,
@@ -154,6 +159,7 @@
 		D753CBDB6AA2F149F82A6F7A /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				BE343E8B78ABF1CA38745D9C /* AudioRecorder.swift */,
 				1C430675DDF145051A7C5A15 /* TextEditorProxy.swift */,
 				AA4CAE13354C9E6012AA1457 /* WindowManager.swift */,
 			);
@@ -235,6 +241,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0B7C6C5DC2A1CF6261B12919 /* AudioClipView.swift in Sources */,
+				22D4EA9CD3503AD33D946692 /* AudioRecorder.swift in Sources */,
 				550F496734439B63A09B88EF /* ColorExtensions.swift in Sources */,
 				6294487BC7E6D4BD155FD2A7 /* ColorPickerMenu.swift in Sources */,
 				1CB95E103FB9210DFEBEB993 /* DateFormatting.swift in Sources */,
@@ -271,6 +279,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Sticky Notes";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Sticky Notes needs microphone access to record audio notes.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -352,6 +361,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Sticky Notes";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Sticky Notes needs microphone access to record audio notes.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

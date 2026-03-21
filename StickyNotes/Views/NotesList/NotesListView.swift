@@ -144,7 +144,14 @@ struct NotesListView: View {
     }
 
     private func deleteNote(_ note: StickyNote) {
-        windowManager.markClosed(note.id)
+        let noteID = note.id
+        // Close the floating window if open
+        if let window = NSApplication.shared.windows.first(where: {
+            $0.identifier?.rawValue == noteID.uuidString
+        }) {
+            window.close()
+        }
+        windowManager.markClosed(noteID)
         modelContext.delete(note)
         try? modelContext.save()
     }

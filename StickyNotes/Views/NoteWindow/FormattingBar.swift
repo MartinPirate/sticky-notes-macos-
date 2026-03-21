@@ -6,6 +6,8 @@ struct FormattingBar: View {
     let onUnderline: () -> Void
     let onStrikethrough: () -> Void
     let onBulletList: () -> Void
+    let onTodoList: () -> Void
+    let onHiddenText: () -> Void
 
     var body: some View {
         HStack(spacing: 2) {
@@ -16,9 +18,16 @@ struct FormattingBar: View {
 
             Divider()
                 .frame(height: 16)
-                .padding(.horizontal, 4)
+                .padding(.horizontal, 3)
 
             formatButton(icon: "list.bullet", tooltip: "Bullet List", action: onBulletList)
+            formatButton(icon: "checklist", tooltip: "Todo List", action: onTodoList)
+
+            Divider()
+                .frame(height: 16)
+                .padding(.horizontal, 3)
+
+            formatButton(icon: "eye.slash", tooltip: "Hide/Reveal Text", action: onHiddenText)
         }
     }
 
@@ -26,7 +35,7 @@ struct FormattingBar: View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 12, weight: .medium))
-                .frame(width: 26, height: 26)
+                .frame(width: 24, height: 24)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

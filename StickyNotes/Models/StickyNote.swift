@@ -15,6 +15,10 @@ final class StickyNote {
     var modifiedAt: Date
     var isOpen: Bool
 
+    /// Audio recordings attached to this note (stored as m4a data)
+    @Attribute(.externalStorage)
+    var audioRecordings: [Data]
+
     var noteColor: NoteColor {
         get { NoteColor(rawValue: colorRawValue) ?? .yellow }
         set { colorRawValue = newValue.rawValue }
@@ -51,5 +55,6 @@ final class StickyNote {
         self.createdAt = Date()
         self.modifiedAt = Date()
         self.isOpen = false
+        self.audioRecordings = []
     }
 }

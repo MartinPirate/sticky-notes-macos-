@@ -10,6 +10,7 @@ struct NoteWindowView: View {
     @State private var attributedText = NSAttributedString()
     @State private var plainText = ""
     @State private var editorProxy = TextEditorProxy()
+    @State private var audioRecorder = AudioRecorder()
     @State private var showDeleteConfirmation = false
     @AppStorage("confirmBeforeDelete") private var confirmBeforeDelete = true
 
@@ -20,7 +21,13 @@ struct NoteWindowView: View {
                     NoteToolbarView(
                         note: note,
                         proxy: editorProxy,
-                        onDelete: { requestDelete() }
+                        audioRecorder: audioRecorder,
+                        onDelete: { requestDelete() },
+                        onAudioSaved: { data in
+                            note.audioRecordings.append(data)
+                            note.modifiedAt = Date()
+                            try? modelContext.save()
+                        }
                     )
 
                     NoteTextEditor(
@@ -29,6 +36,16 @@ struct NoteWindowView: View {
                         backgroundColor: NSColor(note.noteColor.backgroundColor(for: colorScheme)),
                         proxy: editorProxy,
                         onTextChange: { saveContent() }
+                    )
+
+                    AudioClipView(
+                        recordings: note.audioRecordings,
+                        audioRecorder: audioRecorder,
+                        onDelete: { index in
+                            note.audioRecordings.remove(at: index)
+                            note.modifiedAt = Date()
+                            try? modelContext.save()
+                        }
                     )
                 }
                 .background(
@@ -45,6 +62,7 @@ struct NoteWindowView: View {
                             observeWindowChanges(window)
                         },
                         onClose: {
+                            audioRecorder.stopPlayback()
                             windowManager.markClosed(noteID)
                             note.isOpen = false
                             saveWindowPosition()
@@ -137,6 +155,7 @@ struct NoteWindowView: View {
 
     private func deleteNote() {
         guard let note else { return }
+        audioRecorder.stopPlayback()
         windowManager.markClosed(noteID)
         modelContext.delete(note)
         try? modelContext.save()
