@@ -6,12 +6,30 @@ struct StickyNotesApp: App {
     @State private var windowManager = WindowManager()
     @Environment(\.openWindow) private var openWindow
 
-    /// Single shared container so list + note windows share the same data
+    /// Single shared container so list + note windows share the same data.
+    /// If the schema changed and migration fails, delete the old store and retry.
     let sharedContainer: ModelContainer = {
+        let schema = Schema([StickyNote.self])
+        let config = ModelConfiguration(schema: schema)
         do {
-            return try ModelContainer(for: StickyNote.self)
+            return try ModelContainer(for: schema, configurations: [config])
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            NSLog("ModelContainer failed, resetting store: \(error)")
+            // Delete the old incompatible store
+            let storeURL = config.url
+            let related = [
+                storeURL,
+                storeURL.appendingPathExtension("wal"),
+                storeURL.appendingPathExtension("shm")
+            ]
+            for url in related {
+                try? FileManager.default.removeItem(at: url)
+            }
+            do {
+                return try ModelContainer(for: schema, configurations: [config])
+            } catch {
+                fatalError("Failed to create ModelContainer after reset: \(error)")
+            }
         }
     }()
 
