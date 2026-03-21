@@ -1,0 +1,27 @@
+name: StickyNotes
+options:
+  bundleIdPrefix: com.shenanigans
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "15.0"
+  minimumXcodeGenVersion: "2.35"
+
+targets:
+  StickyNotes:
+    type: application
+    platform: macOS
+    sources:
+      - StickyNotes
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.shenanigans.sticky-notes
+        PRODUCT_NAME: Sticky Notes
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.productivity"
+        INFOPLIST_KEY_CFBundleDisplayName: "Sticky Notes"
+        CODE_SIGN_ENTITLEMENTS: StickyNotes/StickyNotes.entitlements
+        GENERATE_INFOPLIST_FILE: YES
+        ENABLE_PREVIEWS: YES
