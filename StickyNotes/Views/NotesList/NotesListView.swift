@@ -108,7 +108,8 @@ struct NotesListView: View {
     }
 
     private func createNote() {
-        let note = StickyNote(color: defaultColor)
+        let color = NoteColor.allCases.randomElement() ?? .yellow
+        let note = StickyNote(color: color)
         modelContext.insert(note)
         try? modelContext.save()
         openNote(note)
