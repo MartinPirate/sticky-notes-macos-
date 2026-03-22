@@ -158,4 +158,35 @@ final class ClickableTextView: NSTextView {
 
         super.mouseDown(with: event)
     }
+
+    override func insertNewline(_ sender: Any?) {
+        let text = string as NSString
+        let cursorLocation = selectedRange().location
+        let lineRange = text.lineRange(for: NSRange(location: cursorLocation, length: 0))
+        let lineText = text.substring(with: lineRange).trimmingCharacters(in: .newlines)
+
+        if lineText.hasPrefix("☐ ") || lineText.hasPrefix("☑ ") {
+            // If the line is just a bare checkbox with no content, remove it instead
+            let content = String(lineText.dropFirst(2)).trimmingCharacters(in: .whitespaces)
+            if content.isEmpty {
+                // Remove the empty todo line
+                insertText("", replacementRange: lineRange)
+                return
+            }
+            // Auto-continue with unchecked todo
+            super.insertNewline(sender)
+            insertText("☐ ", replacementRange: selectedRange())
+        } else if lineText.hasPrefix("• ") {
+            let content = String(lineText.dropFirst(2)).trimmingCharacters(in: .whitespaces)
+            if content.isEmpty {
+                insertText("", replacementRange: lineRange)
+                return
+            }
+            // Auto-continue bullet
+            super.insertNewline(sender)
+            insertText("• ", replacementRange: selectedRange())
+        } else {
+            super.insertNewline(sender)
+        }
+    }
 }
