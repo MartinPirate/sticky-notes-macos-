@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import SwiftData
 
 @Model
@@ -38,18 +38,23 @@ final class StickyNote {
 
     init(
         color: NoteColor = .yellow,
-        content: String = "",
-        x: Double = 100,
-        y: Double = 100,
-        width: Double = 300,
-        height: Double = 350
+        content: String = ""
     ) {
+        // Random position within the main screen bounds
+        let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+        let width: Double = 300
+        let height: Double = 350
+        let maxX = max(screen.origin.x, screen.origin.x + screen.width - width - 40)
+        let maxY = max(screen.origin.y, screen.origin.y + screen.height - height - 40)
+        let randX = Double.random(in: (screen.origin.x + 40)...maxX)
+        let randY = Double.random(in: (screen.origin.y + 40)...maxY)
+
         self.id = UUID()
         self.plainTextContent = content
         self.attributedContentData = nil
         self.colorRawValue = color.rawValue
-        self.windowX = x
-        self.windowY = y
+        self.windowX = randX
+        self.windowY = randY
         self.windowWidth = width
         self.windowHeight = height
         self.createdAt = Date()
