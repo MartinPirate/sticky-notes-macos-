@@ -11,6 +11,7 @@ struct NoteWindowView: View {
     @State private var plainText = ""
     @State private var editorProxy = TextEditorProxy()
     @State private var audioRecorder = AudioRecorder()
+    @State private var speechRecognizer = SpeechRecognizer()
     @State private var showDeleteConfirmation = false
     @AppStorage("confirmBeforeDelete") private var confirmBeforeDelete = true
 
@@ -22,11 +23,15 @@ struct NoteWindowView: View {
                         note: note,
                         proxy: editorProxy,
                         audioRecorder: audioRecorder,
+                        speechRecognizer: speechRecognizer,
                         onDelete: { requestDelete() },
                         onAudioSaved: { data in
                             note.audioRecordings.append(data)
                             note.modifiedAt = Date()
                             try? modelContext.save()
+                        },
+                        onDictationText: { text in
+                            insertDictatedText(text)
                         }
                     )
 
@@ -143,6 +148,21 @@ struct NoteWindowView: View {
         note.windowY = Double(frame.origin.y)
         note.windowWidth = Double(frame.size.width)
         note.windowHeight = Double(frame.size.height)
+    }
+
+    private func insertDictatedText(_ text: String) {
+        guard let textView = editorProxy.textView else { return }
+        let insertRange = textView.selectedRange()
+        // Add a space before if not at start and previous char isn't whitespace
+        var prefix = ""
+        if insertRange.location > 0 {
+            let prevChar = (textView.string as NSString).substring(with: NSRange(location: insertRange.location - 1, length: 1))
+            if prevChar != " " && prevChar != "\n" {
+                prefix = " "
+            }
+        }
+        textView.insertText(prefix + text, replacementRange: insertRange)
+        saveContent()
     }
 
     private func requestDelete() {

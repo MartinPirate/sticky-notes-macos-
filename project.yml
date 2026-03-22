@@ -28,4 +28,5 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         COMBINE_HIDPI_IMAGES: YES
-        INFOPLIST_KEY_NSMicrophoneUsageDescription: "Sticky Notes needs microphone access to record audio notes."
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "Sticky Notes needs microphone access to record audio notes and dictation."
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: "Sticky Notes uses speech recognition for dictation input."

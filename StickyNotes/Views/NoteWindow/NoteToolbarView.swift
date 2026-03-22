@@ -4,8 +4,10 @@ struct NoteToolbarView: View {
     let note: StickyNote
     let proxy: TextEditorProxy
     let audioRecorder: AudioRecorder
+    let speechRecognizer: SpeechRecognizer
     let onDelete: () -> Void
     let onAudioSaved: (Data) -> Void
+    let onDictationText: (String) -> Void
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -22,29 +24,78 @@ struct NoteToolbarView: View {
 
             Spacer()
 
-            // Audio record button
-            Button {
-                if audioRecorder.isRecording {
-                    if let data = audioRecorder.stopRecording() {
-                        onAudioSaved(data)
-                    }
-                } else {
-                    audioRecorder.startRecording()
-                }
-            } label: {
-                Image(systemName: audioRecorder.isRecording ? "stop.circle.fill" : "mic")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(audioRecorder.isRecording ? .red : .primary)
-                    .frame(width: 26, height: 26)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help(audioRecorder.isRecording ? "Stop Recording" : "Record Audio")
-
+            // Active recording indicator
             if audioRecorder.isRecording {
-                Text(formatDuration(audioRecorder.recordingDuration))
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundStyle(.red)
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(.red)
+                        .frame(width: 6, height: 6)
+                    Text(formatDuration(audioRecorder.recordingDuration))
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundStyle(.red)
+                    Button {
+                        if let data = audioRecorder.stopRecording() {
+                            onAudioSaved(data)
+                        }
+                    } label: {
+                        Image(systemName: "stop.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.red)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            // Active dictation indicator
+            else if speechRecognizer.isListening {
+                HStack(spacing: 4) {
+                    Image(systemName: "waveform")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.blue)
+                        .symbolEffect(.variableColor.iterative)
+                    Text("Listening...")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.blue)
+                    Button {
+                        let text = speechRecognizer.transcript
+                        speechRecognizer.stopListening()
+                        if !text.isEmpty {
+                            onDictationText(text)
+                        }
+                    } label: {
+                        Image(systemName: "stop.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.blue)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            else {
+                // Audio input menu with two options
+                Menu {
+                    Button {
+                        speechRecognizer.requestAuthorization { authorized in
+                            if authorized {
+                                speechRecognizer.startListening()
+                            }
+                        }
+                    } label: {
+                        Label("Dictate (Speech to Text)", systemImage: "text.bubble")
+                    }
+
+                    Button {
+                        audioRecorder.startRecording()
+                    } label: {
+                        Label("Record Audio Clip", systemImage: "waveform.circle")
+                    }
+                } label: {
+                    Image(systemName: "mic")
+                        .font(.system(size: 13, weight: .medium))
+                        .frame(width: 26, height: 26)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
+                .help("Audio Input")
             }
 
             // "..." menu

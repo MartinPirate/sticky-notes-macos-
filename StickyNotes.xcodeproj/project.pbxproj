@@ -28,9 +28,11 @@
 		C7E92EC7346610FB86681445 /* FormattingBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7217EF20296DFC6B0BC4020 /* FormattingBar.swift */; };
 		D60D810A51DE1054F08D098C /* TextEditorProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C430675DDF145051A7C5A15 /* TextEditorProxy.swift */; };
 		D8EB2F04D85F640DB8EAAAD8 /* StickyNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8826B7F98B8949FE9E61E5A /* StickyNote.swift */; };
+		FD4F353C40F7EE25B249CEDD /* SpeechRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0ECA073AFAF251A3B94B45 /* SpeechRecognizer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0C0ECA073AFAF251A3B94B45 /* SpeechRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognizer.swift; sourceTree = "<group>"; };
 		1C430675DDF145051A7C5A15 /* TextEditorProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextEditorProxy.swift; sourceTree = "<group>"; };
 		22253EDED58982293A39106F /* DateFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatting.swift; sourceTree = "<group>"; };
 		2297900470B900CA99A1EE23 /* ColorExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtensions.swift; sourceTree = "<group>"; };
@@ -160,6 +162,7 @@
 			isa = PBXGroup;
 			children = (
 				BE343E8B78ABF1CA38745D9C /* AudioRecorder.swift */,
+				0C0ECA073AFAF251A3B94B45 /* SpeechRecognizer.swift */,
 				1C430675DDF145051A7C5A15 /* TextEditorProxy.swift */,
 				AA4CAE13354C9E6012AA1457 /* WindowManager.swift */,
 			);
@@ -255,6 +258,7 @@
 				5ED177517D5612505D58BCD0 /* NotesListView.swift in Sources */,
 				9D79F23ACC031929FB318A9C /* SearchBar.swift in Sources */,
 				C5F5AFD2B4CEF7F365C2304B /* SettingsView.swift in Sources */,
+				FD4F353C40F7EE25B249CEDD /* SpeechRecognizer.swift in Sources */,
 				D8EB2F04D85F640DB8EAAAD8 /* StickyNote.swift in Sources */,
 				9EB6DECB906FCAE9D2181AD6 /* StickyNotesApp.swift in Sources */,
 				D60D810A51DE1054F08D098C /* TextEditorProxy.swift in Sources */,
@@ -279,7 +283,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Sticky Notes";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Sticky Notes needs microphone access to record audio notes.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Sticky Notes needs microphone access to record audio notes and dictation.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Sticky Notes uses speech recognition for dictation input.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -361,7 +366,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Sticky Notes";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Sticky Notes needs microphone access to record audio notes.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Sticky Notes needs microphone access to record audio notes and dictation.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Sticky Notes uses speech recognition for dictation input.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
