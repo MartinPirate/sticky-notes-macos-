@@ -7,6 +7,9 @@ final class SpeechRecognizer {
     var transcript = ""
     var error: String?
 
+    /// Called on every partial result so the UI can stream text live
+    var onPartialResult: ((String) -> Void)?
+
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
@@ -26,9 +29,7 @@ final class SpeechRecognizer {
             return
         }
 
-        // Cancel any ongoing task
         stopListening()
-
         transcript = ""
         error = nil
 
@@ -48,13 +49,14 @@ final class SpeechRecognizer {
 
             if let result {
                 DispatchQueue.main.async {
-                    self.transcript = result.bestTranscription.formattedString
+                    let text = result.bestTranscription.formattedString
+                    self.transcript = text
+                    self.onPartialResult?(text)
                 }
             }
 
             if let error {
                 DispatchQueue.main.async {
-                    // Don't show error if we intentionally stopped
                     if self.isListening {
                         self.error = error.localizedDescription
                     }

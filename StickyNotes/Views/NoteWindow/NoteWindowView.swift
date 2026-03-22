@@ -13,6 +13,9 @@ struct NoteWindowView: View {
     @State private var audioRecorder = AudioRecorder()
     @State private var speechRecognizer = SpeechRecognizer()
     @State private var showDeleteConfirmation = false
+    /// Tracks where dictation text was inserted so partial results replace in-place
+    @State private var dictationAnchor: Int?
+    @State private var dictationLength: Int = 0
     @AppStorage("confirmBeforeDelete") private var confirmBeforeDelete = true
 
     var body: some View {
@@ -30,9 +33,8 @@ struct NoteWindowView: View {
                             note.modifiedAt = Date()
                             try? modelContext.save()
                         },
-                        onDictationText: { text in
-                            insertDictatedText(text)
-                        }
+                        onStartDictation: { startLiveDictation() },
+                        onStopDictation: { stopLiveDictation() }
                     )
 
                     NoteTextEditor(
@@ -150,18 +152,51 @@ struct NoteWindowView: View {
         note.windowHeight = Double(frame.size.height)
     }
 
-    private func insertDictatedText(_ text: String) {
+    private func startLiveDictation() {
         guard let textView = editorProxy.textView else { return }
-        let insertRange = textView.selectedRange()
-        // Add a space before if not at start and previous char isn't whitespace
-        var prefix = ""
-        if insertRange.location > 0 {
-            let prevChar = (textView.string as NSString).substring(with: NSRange(location: insertRange.location - 1, length: 1))
+
+        // Record anchor point at current cursor
+        let cursor = textView.selectedRange()
+        var anchor = cursor.location
+
+        // Add a space before if needed
+        if anchor > 0 {
+            let prevChar = (textView.string as NSString).substring(with: NSRange(location: anchor - 1, length: 1))
             if prevChar != " " && prevChar != "\n" {
-                prefix = " "
+                textView.insertText(" ", replacementRange: NSRange(location: anchor, length: 0))
+                anchor += 1
             }
         }
-        textView.insertText(prefix + text, replacementRange: insertRange)
+
+        dictationAnchor = anchor
+        dictationLength = 0
+
+        // Set up live streaming callback
+        speechRecognizer.onPartialResult = { [self] partialText in
+            guard let textView = editorProxy.textView,
+                  let anchor = dictationAnchor else { return }
+
+            // Replace the previous partial text with the new one
+            let replaceRange = NSRange(location: anchor, length: dictationLength)
+            textView.insertText(partialText, replacementRange: replaceRange)
+            dictationLength = (partialText as NSString).length
+
+            // Move cursor to end of dictated text
+            textView.setSelectedRange(NSRange(location: anchor + dictationLength, length: 0))
+        }
+
+        speechRecognizer.requestAuthorization { authorized in
+            if authorized {
+                speechRecognizer.startListening()
+            }
+        }
+    }
+
+    private func stopLiveDictation() {
+        speechRecognizer.stopListening()
+        speechRecognizer.onPartialResult = nil
+        dictationAnchor = nil
+        dictationLength = 0
         saveContent()
     }
 

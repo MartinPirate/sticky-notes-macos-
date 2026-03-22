@@ -7,7 +7,8 @@ struct NoteToolbarView: View {
     let speechRecognizer: SpeechRecognizer
     let onDelete: () -> Void
     let onAudioSaved: (Data) -> Void
-    let onDictationText: (String) -> Void
+    let onStartDictation: () -> Void
+    let onStopDictation: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -56,11 +57,7 @@ struct NoteToolbarView: View {
                         .font(.system(size: 10))
                         .foregroundStyle(.blue)
                     Button {
-                        let text = speechRecognizer.transcript
-                        speechRecognizer.stopListening()
-                        if !text.isEmpty {
-                            onDictationText(text)
-                        }
+                        onStopDictation()
                     } label: {
                         Image(systemName: "stop.circle.fill")
                             .font(.system(size: 14))
@@ -73,11 +70,7 @@ struct NoteToolbarView: View {
                 // Audio input menu with two options
                 Menu {
                     Button {
-                        speechRecognizer.requestAuthorization { authorized in
-                            if authorized {
-                                speechRecognizer.startListening()
-                            }
-                        }
+                        onStartDictation()
                     } label: {
                         Label("Dictate (Speech to Text)", systemImage: "text.bubble")
                     }
