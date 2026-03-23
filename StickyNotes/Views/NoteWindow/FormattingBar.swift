@@ -11,27 +11,27 @@ struct FormattingBar: View {
 
     var body: some View {
         HStack(spacing: 2) {
-            formatButton(icon: "bold", tooltip: "Bold (⌘B)", action: onBold)
-            formatButton(icon: "italic", tooltip: "Italic (⌘I)", action: onItalic)
-            formatButton(icon: "underline", tooltip: "Underline (⌘U)", action: onUnderline)
-            formatButton(icon: "strikethrough", tooltip: "Strikethrough", action: onStrikethrough)
+            formatButton(icon: "bold", label: "Bold", tooltip: "Bold (⌘B)", action: onBold)
+            formatButton(icon: "italic", label: "Italic", tooltip: "Italic (⌘I)", action: onItalic)
+            formatButton(icon: "underline", label: "Underline", tooltip: "Underline (⌘U)", action: onUnderline)
+            formatButton(icon: "strikethrough", label: "Strikethrough", tooltip: "Strikethrough", action: onStrikethrough)
 
             Divider()
                 .frame(height: 16)
                 .padding(.horizontal, 3)
 
-            formatButton(icon: "list.bullet", tooltip: "Bullet List", action: onBulletList)
-            formatButton(icon: "checklist", tooltip: "Todo List", action: onTodoList)
+            formatButton(icon: "list.bullet", label: "Bullet List", tooltip: "Bullet List", action: onBulletList)
+            formatButton(icon: "checklist", label: "Todo List", tooltip: "Todo List", action: onTodoList)
 
             Divider()
                 .frame(height: 16)
                 .padding(.horizontal, 3)
 
-            formatButton(icon: "eye.slash", tooltip: "Hide/Reveal Text", action: onHiddenText)
+            formatButton(icon: "eye.slash", label: "Hide Text", tooltip: "Hide/Reveal Text", action: onHiddenText)
         }
     }
 
-    private func formatButton(icon: String, tooltip: String, action: @escaping () -> Void) -> some View {
+    private func formatButton(icon: String, label: String, tooltip: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 12, weight: .medium))
@@ -39,6 +39,7 @@ struct FormattingBar: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(label)
         .help(tooltip)
     }
 }

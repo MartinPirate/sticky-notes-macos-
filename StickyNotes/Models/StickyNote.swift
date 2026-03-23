@@ -15,7 +15,6 @@ final class StickyNote {
     var modifiedAt: Date
     var isOpen: Bool
 
-    /// Audio recordings attached to this note (stored as m4a data)
     @Attribute(.externalStorage)
     var audioRecordings: [Data]
 
@@ -40,7 +39,6 @@ final class StickyNote {
         color: NoteColor = .yellow,
         content: String = ""
     ) {
-        // Random position within the main screen bounds
         let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
         let width: Double = 300
         let height: Double = 350
@@ -61,5 +59,23 @@ final class StickyNote {
         self.modifiedAt = Date()
         self.isOpen = false
         self.audioRecordings = []
+    }
+
+    // MARK: - Mutations (centralized to avoid scattered state changes)
+
+    func setColor(_ color: NoteColor) {
+        noteColor = color
+        modifiedAt = Date()
+    }
+
+    func addAudioRecording(_ data: Data) {
+        audioRecordings.append(data)
+        modifiedAt = Date()
+    }
+
+    func removeAudioRecording(at index: Int) {
+        guard audioRecordings.indices.contains(index) else { return }
+        audioRecordings.remove(at: index)
+        modifiedAt = Date()
     }
 }

@@ -1,6 +1,5 @@
 import AppKit
 
-// Custom attribute key for hidden/spoiler text
 extension NSAttributedString.Key {
     static let hiddenText = NSAttributedString.Key("com.stickynotes.hiddenText")
 }
@@ -8,26 +7,19 @@ extension NSAttributedString.Key {
 @Observable
 final class TextEditorProxy {
     weak var textView: NSTextView?
-
-    /// Tracks the last known selection so formatting works even after
-    /// a SwiftUI button click steals first responder from NSTextView.
     var lastSelectedRange: NSRange = NSRange(location: 0, length: 0)
 
     func updateSelection(_ range: NSRange) {
-        // Only save non-zero selections — when a toolbar button steals focus,
-        // the textView fires selectionDidChange with length 0, which would
-        // erase the range we need for formatting.
         if range.length > 0 {
             lastSelectedRange = range
         }
     }
 
-    // MARK: - Restore focus and get effective range
+    // MARK: - Focus Management
 
     private func restoreFocusAndRange() -> NSRange? {
         guard let textView else { return nil }
         textView.window?.makeFirstResponder(textView)
-
         let current = textView.selectedRange()
         let effective = current.length > 0 ? current : lastSelectedRange
         if effective.length > 0 {
@@ -36,24 +28,33 @@ final class TextEditorProxy {
         return effective
     }
 
-    // MARK: - Text Formatting
+    // MARK: - Font Trait Formatting (DRY: single method for B/I)
 
-    func toggleBold() {
+    func toggleBold() { toggleFontTrait(.boldFontMask, symbolicTrait: .bold) }
+    func toggleItalic() { toggleFontTrait(.italicFontMask, symbolicTrait: .italic) }
+
+    private func toggleFontTrait(_ trait: NSFontTraitMask, symbolicTrait: NSFontDescriptor.SymbolicTraits) {
         guard let textView, let storage = textView.textStorage else { return }
         guard let range = restoreFocusAndRange() else { return }
+
         if range.length == 0 {
-            toggleTypingAttribute(textView, trait: .boldFontMask)
+            var attrs = textView.typingAttributes
+            let font = (attrs[.font] as? NSFont) ?? NSFont.systemFont(ofSize: 14)
+            if font.fontDescriptor.symbolicTraits.contains(symbolicTrait) {
+                attrs[.font] = NSFontManager.shared.convert(font, toNotHaveTrait: trait)
+            } else {
+                attrs[.font] = NSFontManager.shared.convert(font, toHaveTrait: trait)
+            }
+            textView.typingAttributes = attrs
             return
         }
+
         storage.beginEditing()
         storage.enumerateAttribute(.font, in: range) { value, attrRange, _ in
             guard let font = value as? NSFont else { return }
-            let newFont: NSFont
-            if font.fontDescriptor.symbolicTraits.contains(.bold) {
-                newFont = NSFontManager.shared.convert(font, toNotHaveTrait: .boldFontMask)
-            } else {
-                newFont = NSFontManager.shared.convert(font, toHaveTrait: .boldFontMask)
-            }
+            let newFont = font.fontDescriptor.symbolicTraits.contains(symbolicTrait)
+                ? NSFontManager.shared.convert(font, toNotHaveTrait: trait)
+                : NSFontManager.shared.convert(font, toHaveTrait: trait)
             storage.addAttribute(.font, value: newFont, range: attrRange)
         }
         storage.endEditing()
@@ -61,72 +62,41 @@ final class TextEditorProxy {
         notifyChange(textView)
     }
 
-    func toggleItalic() {
-        guard let textView, let storage = textView.textStorage else { return }
-        guard let range = restoreFocusAndRange() else { return }
-        if range.length == 0 {
-            toggleTypingAttribute(textView, trait: .italicFontMask)
-            return
-        }
-        storage.beginEditing()
-        storage.enumerateAttribute(.font, in: range) { value, attrRange, _ in
-            guard let font = value as? NSFont else { return }
-            let newFont: NSFont
-            if font.fontDescriptor.symbolicTraits.contains(.italic) {
-                newFont = NSFontManager.shared.convert(font, toNotHaveTrait: .italicFontMask)
-            } else {
-                newFont = NSFontManager.shared.convert(font, toHaveTrait: .italicFontMask)
-            }
-            storage.addAttribute(.font, value: newFont, range: attrRange)
-        }
-        storage.endEditing()
-        textView.setSelectedRange(range)
-        notifyChange(textView)
-    }
+    // MARK: - Attribute Style Formatting (DRY: single method for U/S)
 
-    func toggleUnderline() {
+    func toggleUnderline() { toggleAttributeStyle(.underlineStyle) }
+    func toggleStrikethrough() { toggleAttributeStyle(.strikethroughStyle) }
+
+    private func toggleAttributeStyle(_ key: NSAttributedString.Key) {
         guard let textView, let storage = textView.textStorage else { return }
         guard let range = restoreFocusAndRange() else { return }
+
         if range.length == 0 {
             var attrs = textView.typingAttributes
-            let current = (attrs[.underlineStyle] as? Int) ?? 0
-            attrs[.underlineStyle] = current == 0 ? NSUnderlineStyle.single.rawValue : 0
+            let current = (attrs[key] as? Int) ?? 0
+            attrs[key] = current == 0 ? NSUnderlineStyle.single.rawValue : 0
             textView.typingAttributes = attrs
             return
         }
+
         storage.beginEditing()
-        storage.enumerateAttribute(.underlineStyle, in: range) { value, attrRange, _ in
+        storage.enumerateAttribute(key, in: range) { value, attrRange, _ in
             let current = (value as? Int) ?? 0
             let newValue = current == 0 ? NSUnderlineStyle.single.rawValue : 0
-            storage.addAttribute(.underlineStyle, value: newValue, range: attrRange)
+            storage.addAttribute(key, value: newValue, range: attrRange)
         }
         storage.endEditing()
         textView.setSelectedRange(range)
         notifyChange(textView)
     }
 
-    func toggleStrikethrough() {
-        guard let textView, let storage = textView.textStorage else { return }
-        guard let range = restoreFocusAndRange() else { return }
-        if range.length == 0 {
-            var attrs = textView.typingAttributes
-            let current = (attrs[.strikethroughStyle] as? Int) ?? 0
-            attrs[.strikethroughStyle] = current == 0 ? NSUnderlineStyle.single.rawValue : 0
-            textView.typingAttributes = attrs
-            return
-        }
-        storage.beginEditing()
-        storage.enumerateAttribute(.strikethroughStyle, in: range) { value, attrRange, _ in
-            let current = (value as? Int) ?? 0
-            let newValue = current == 0 ? NSUnderlineStyle.single.rawValue : 0
-            storage.addAttribute(.strikethroughStyle, value: newValue, range: attrRange)
-        }
-        storage.endEditing()
-        textView.setSelectedRange(range)
-        notifyChange(textView)
-    }
+    // MARK: - List Formatting (DRY: generic prefix toggle)
 
-    func toggleBulletList() {
+    func toggleBulletList() { toggleLinePrefix(prefix: "• ", matchPrefixes: ["• "]) }
+
+    func toggleTodoList() { toggleLinePrefix(prefix: "☐ ", matchPrefixes: ["☐ ", "☑ "]) }
+
+    private func toggleLinePrefix(prefix: String, matchPrefixes: [String]) {
         guard let textView else { return }
         _ = restoreFocusAndRange()
         let text = textView.string as NSString
@@ -137,75 +107,35 @@ final class TextEditorProxy {
 
         let lines = lineText.components(separatedBy: "\n")
         let nonEmpty = lines.filter { !$0.isEmpty }
-        let allBulleted = !nonEmpty.isEmpty && nonEmpty.allSatisfy { $0.hasPrefix("• ") }
-
-        var newLines: [String] = []
-        for line in lines {
-            if line.isEmpty {
-                newLines.append(line)
-            } else if allBulleted {
-                newLines.append(String(line.dropFirst(2)))
-            } else if !line.hasPrefix("• ") {
-                newLines.append("• " + line)
-            } else {
-                newLines.append(line)
-            }
+        let allPrefixed = !nonEmpty.isEmpty && nonEmpty.allSatisfy { line in
+            matchPrefixes.contains(where: { line.hasPrefix($0) })
         }
 
-        let newText = newLines.joined(separator: "\n")
-        textView.insertText(newText, replacementRange: lineRange)
-        notifyChange(textView)
-    }
-
-    // MARK: - Todo List
-
-    func toggleTodoList() {
-        guard let textView else { return }
-        _ = restoreFocusAndRange()
-        let text = textView.string as NSString
-        let selectedRange = textView.selectedRange()
-        let effectiveRange = selectedRange.length > 0 ? selectedRange : lastSelectedRange
-        let lineRange = text.lineRange(for: effectiveRange)
-        let lineText = text.substring(with: lineRange)
-
-        let lines = lineText.components(separatedBy: "\n")
-        let nonEmpty = lines.filter { !$0.isEmpty }
-        let allTodo = !nonEmpty.isEmpty && nonEmpty.allSatisfy {
-            $0.hasPrefix("☐ ") || $0.hasPrefix("☑ ")
-        }
-
-        var newLines: [String] = []
-        for line in lines {
-            if line.isEmpty {
-                newLines.append(line)
-            } else if allTodo {
-                // Remove todo prefix
-                if line.hasPrefix("☐ ") || line.hasPrefix("☑ ") {
-                    newLines.append(String(line.dropFirst(2)))
-                } else {
-                    newLines.append(line)
+        let newLines = lines.map { line -> String in
+            guard !line.isEmpty else { return line }
+            if allPrefixed {
+                for mp in matchPrefixes where line.hasPrefix(mp) {
+                    return String(line.dropFirst(mp.count))
                 }
-            } else if !line.hasPrefix("☐ ") && !line.hasPrefix("☑ ") {
-                newLines.append("☐ " + line)
+                return line
             } else {
-                newLines.append(line)
+                return matchPrefixes.contains(where: { line.hasPrefix($0) }) ? line : prefix + line
             }
         }
 
-        let newText = newLines.joined(separator: "\n")
-        textView.insertText(newText, replacementRange: lineRange)
+        textView.insertText(newLines.joined(separator: "\n"), replacementRange: lineRange)
         notifyChange(textView)
     }
 
-    /// Toggle a single todo line between ☐ and ☑ at the given character index
+    // MARK: - Todo Toggle
+
     func toggleTodoAt(characterIndex: Int) {
         guard let textView else { return }
         let text = textView.string as NSString
-        let clickRange = NSRange(location: characterIndex, length: 0)
-        let lineRange = text.lineRange(for: clickRange)
+        let lineRange = text.lineRange(for: NSRange(location: characterIndex, length: 0))
         let lineText = text.substring(with: lineRange)
 
-        var newLine = lineText
+        let newLine: String
         if lineText.hasPrefix("☐ ") {
             newLine = "☑ " + String(lineText.dropFirst(2))
         } else if lineText.hasPrefix("☑ ") {
@@ -216,7 +146,6 @@ final class TextEditorProxy {
 
         textView.insertText(newLine, replacementRange: lineRange)
 
-        // Apply strikethrough to completed items
         let newLineRange = NSRange(location: lineRange.location, length: (newLine as NSString).length)
         if newLine.hasPrefix("☑ ") {
             textView.textStorage?.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: newLineRange)
@@ -225,68 +154,55 @@ final class TextEditorProxy {
             textView.textStorage?.removeAttribute(.strikethroughStyle, range: newLineRange)
             textView.textStorage?.addAttribute(.foregroundColor, value: NSColor.textColor, range: newLineRange)
         }
-
         notifyChange(textView)
     }
 
     // MARK: - Hidden/Spoiler Text
 
-    /// The hide color uses a solid block that works in both light and dark mode.
-    private static let hiddenBgColor = NSColor.labelColor
-    private static let hiddenFgColor = NSColor.labelColor
-
     func toggleHiddenText() {
         guard let textView, let storage = textView.textStorage else { return }
         guard let range = restoreFocusAndRange(), range.length > 0 else { return }
 
-        // Check if already hidden by looking for our marker attribute
         var isHidden = false
         if range.location < storage.length {
-            let checkRange = NSRange(location: range.location, length: min(1, storage.length - range.location))
-            storage.enumerateAttribute(.hiddenText, in: checkRange) { value, _, stop in
-                if value as? Bool == true {
-                    isHidden = true
-                    stop.pointee = true
-                }
+            let checkLen = min(1, storage.length - range.location)
+            storage.enumerateAttribute(.hiddenText, in: NSRange(location: range.location, length: checkLen)) { value, _, stop in
+                if value as? Bool == true { isHidden = true; stop.pointee = true }
             }
         }
 
         storage.beginEditing()
         if isHidden {
-            // Reveal
             storage.removeAttribute(.hiddenText, range: range)
             storage.removeAttribute(.backgroundColor, range: range)
             storage.addAttribute(.foregroundColor, value: NSColor.textColor, range: range)
         } else {
-            // Hide: solid colored block over the text
             storage.addAttribute(.hiddenText, value: true, range: range)
-            storage.addAttribute(.backgroundColor, value: Self.hiddenBgColor, range: range)
-            storage.addAttribute(.foregroundColor, value: Self.hiddenFgColor, range: range)
+            storage.addAttribute(.backgroundColor, value: NSColor.labelColor, range: range)
+            storage.addAttribute(.foregroundColor, value: NSColor.labelColor, range: range)
         }
         storage.endEditing()
-
-        // Deselect so the blue highlight doesn't reveal text
         textView.setSelectedRange(NSRange(location: range.location + range.length, length: 0))
         notifyChange(textView)
     }
 
-    /// Reveal hidden text at a click location
     func revealHiddenTextAt(characterIndex: Int) {
         guard let textView, let storage = textView.textStorage else { return }
         guard characterIndex < storage.length else { return }
 
-        let checkRange = NSRange(location: characterIndex, length: 1)
-        var foundRange: NSRange?
+        // Search a bounded range around the click point, not the entire document
+        let searchStart = max(0, characterIndex - 500)
+        let searchEnd = min(storage.length, characterIndex + 500)
+        let searchRange = NSRange(location: searchStart, length: searchEnd - searchStart)
 
-        storage.enumerateAttribute(.hiddenText, in: NSRange(location: 0, length: storage.length)) { value, attrRange, stop in
-            guard value as? Bool == true,
-                  NSLocationInRange(characterIndex, attrRange) else { return }
+        var foundRange: NSRange?
+        storage.enumerateAttribute(.hiddenText, in: searchRange) { value, attrRange, stop in
+            guard value as? Bool == true, NSLocationInRange(characterIndex, attrRange) else { return }
             foundRange = attrRange
             stop.pointee = true
         }
 
         guard let range = foundRange else { return }
-
         storage.beginEditing()
         storage.removeAttribute(.hiddenText, range: range)
         storage.removeAttribute(.backgroundColor, range: range)
@@ -297,27 +213,7 @@ final class TextEditorProxy {
 
     // MARK: - Private
 
-    private func toggleTypingAttribute(_ textView: NSTextView, trait: NSFontTraitMask) {
-        var attrs = textView.typingAttributes
-        let font = (attrs[.font] as? NSFont) ?? NSFont.systemFont(ofSize: 14)
-        let hasTrait: Bool
-        if trait == .boldFontMask {
-            hasTrait = font.fontDescriptor.symbolicTraits.contains(.bold)
-        } else {
-            hasTrait = font.fontDescriptor.symbolicTraits.contains(.italic)
-        }
-        if hasTrait {
-            attrs[.font] = NSFontManager.shared.convert(font, toNotHaveTrait: trait)
-        } else {
-            attrs[.font] = NSFontManager.shared.convert(font, toHaveTrait: trait)
-        }
-        textView.typingAttributes = attrs
-    }
-
     private func notifyChange(_ textView: NSTextView) {
-        NotificationCenter.default.post(
-            name: NSText.didChangeNotification,
-            object: textView
-        )
+        NotificationCenter.default.post(name: NSText.didChangeNotification, object: textView)
     }
 }

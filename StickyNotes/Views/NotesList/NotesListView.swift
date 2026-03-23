@@ -10,16 +10,11 @@ struct NotesListView: View {
     @State private var showDeleteConfirmation = false
     @State private var isCollapsed = false
     @AppStorage("confirmBeforeDelete") private var confirmBeforeDelete = true
-    @AppStorage("defaultColor") private var defaultColorRaw = NoteColor.yellow.rawValue
 
     private var filteredNotes: [StickyNote] {
         if searchText.isEmpty { return notes }
         let query = searchText.lowercased()
         return notes.filter { $0.plainTextContent.lowercased().contains(query) }
-    }
-
-    private var defaultColor: NoteColor {
-        NoteColor(rawValue: defaultColorRaw) ?? .yellow
     }
 
     var body: some View {
@@ -40,9 +35,7 @@ struct NotesListView: View {
         .alert("Delete Note?", isPresented: $showDeleteConfirmation) {
             Button("Cancel", role: .cancel) { noteToDelete = nil }
             Button("Delete", role: .destructive) {
-                if let note = noteToDelete {
-                    deleteNote(note)
-                }
+                if let note = noteToDelete { deleteNote(note) }
                 noteToDelete = nil
             }
         } message: {
@@ -57,11 +50,8 @@ struct NotesListView: View {
 
             Spacer()
 
-            // Collapse/expand toggle
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isCollapsed.toggle()
-                }
+                withAnimation(.easeInOut(duration: 0.2)) { isCollapsed.toggle() }
             } label: {
                 Image(systemName: isCollapsed ? "list.bullet" : "rectangle.grid.1x2")
                     .font(.system(size: 14, weight: .medium))
@@ -70,9 +60,7 @@ struct NotesListView: View {
             .buttonStyle(.plain)
             .help(isCollapsed ? "Expanded View" : "Compact View")
 
-            Button {
-                createNote()
-            } label: {
+            Button { createNote() } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(.primary)
@@ -113,12 +101,7 @@ struct NotesListView: View {
                         note: note,
                         isCollapsed: isCollapsed,
                         onOpen: { openNote(note) },
-                        onDelete: { requestDelete(note) },
-                        onToggleCollapse: {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                isCollapsed.toggle()
-                            }
-                        }
+                        onDelete: { requestDelete(note) }
                     )
                 }
             }
@@ -141,16 +124,11 @@ struct NotesListView: View {
         } else {
             note.isOpen = true
             windowManager.markOpened(note.id)
-            openNoteWindow(note.id)
+            NotificationCenter.default.post(
+                name: .openNoteWindow, object: nil,
+                userInfo: ["noteID": note.id]
+            )
         }
-    }
-
-    private func openNoteWindow(_ id: UUID) {
-        NotificationCenter.default.post(
-            name: .openNoteWindow,
-            object: nil,
-            userInfo: ["noteID": id]
-        )
     }
 
     private func requestDelete(_ note: StickyNote) {
@@ -163,13 +141,7 @@ struct NotesListView: View {
     }
 
     private func deleteNote(_ note: StickyNote) {
-        let noteID = note.id
-        if let window = NSApplication.shared.windows.first(where: {
-            $0.identifier?.rawValue == noteID.uuidString
-        }) {
-            window.close()
-        }
-        windowManager.markClosed(noteID)
+        windowManager.closeWindow(for: note.id)
         modelContext.delete(note)
         try? modelContext.save()
     }

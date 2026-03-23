@@ -1,6 +1,7 @@
 import AVFoundation
 import AppKit
 
+@MainActor
 @Observable
 final class AudioRecorder: NSObject {
     var isRecording = false
@@ -13,12 +14,9 @@ final class AudioRecorder: NSObject {
     private var recordingURL: URL?
     private var timer: Timer?
 
-    private var tempDirectory: URL {
-        FileManager.default.temporaryDirectory
-    }
-
     func startRecording() {
-        let url = tempDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString + ".m4a")
         recordingURL = url
 
         let settings: [String: Any] = [
@@ -35,10 +33,12 @@ final class AudioRecorder: NSObject {
             isRecording = true
             recordingDuration = 0
             timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-                self?.recordingDuration = self?.audioRecorder?.currentTime ?? 0
+                Task { @MainActor [weak self] in
+                    self?.recordingDuration = self?.audioRecorder?.currentTime ?? 0
+                }
             }
         } catch {
-            NSLog("Failed to start recording: \(error)")
+            NSLog("AudioRecorder: failed to start — \(error.localizedDescription)")
         }
     }
 
@@ -53,7 +53,19 @@ final class AudioRecorder: NSObject {
             try? FileManager.default.removeItem(at: url)
             recordingURL = nil
         }
-        return try? Data(contentsOf: url)
+
+        guard let data = try? Data(contentsOf: url) else {
+            NSLog("AudioRecorder: failed to read recorded file")
+            return nil
+        }
+
+        // Validate the data is playable audio
+        guard (try? AVAudioPlayer(data: data)) != nil else {
+            NSLog("AudioRecorder: recorded data is not valid audio")
+            return nil
+        }
+
+        return data
     }
 
     func play(data: Data, index: Int) {
@@ -66,7 +78,7 @@ final class AudioRecorder: NSObject {
             isPlaying = true
             playingIndex = index
         } catch {
-            NSLog("Failed to play audio: \(error)")
+            NSLog("AudioRecorder: playback failed — \(error.localizedDescription)")
         }
     }
 
@@ -84,14 +96,18 @@ final class AudioRecorder: NSObject {
 }
 
 extension AudioRecorder: AVAudioRecorderDelegate {
-    func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
-        isRecording = false
+    nonisolated func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
+        Task { @MainActor in
+            isRecording = false
+        }
     }
 }
 
 extension AudioRecorder: AVAudioPlayerDelegate {
-    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        isPlaying = false
-        playingIndex = nil
+    nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        Task { @MainActor in
+            isPlaying = false
+            playingIndex = nil
+        }
     }
 }

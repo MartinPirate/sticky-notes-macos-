@@ -1,6 +1,7 @@
 import Speech
 import AVFoundation
 
+@MainActor
 @Observable
 final class SpeechRecognizer {
     var isListening = false
@@ -17,7 +18,7 @@ final class SpeechRecognizer {
 
     func requestAuthorization(completion: @escaping (Bool) -> Void) {
         SFSpeechRecognizer.requestAuthorization { status in
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 completion(status == .authorized)
             }
         }
@@ -45,27 +46,24 @@ final class SpeechRecognizer {
         }
 
         recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
-            guard let self else { return }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
 
-            if let result {
-                DispatchQueue.main.async {
+                if let result {
                     let text = result.bestTranscription.formattedString
                     self.transcript = text
                     self.onPartialResult?(text)
                 }
-            }
 
-            if let error {
-                DispatchQueue.main.async {
+                if let error {
                     if self.isListening {
                         self.error = error.localizedDescription
+                        NSLog("SpeechRecognizer: \(error.localizedDescription)")
                     }
                     self.stopListening()
                 }
-            }
 
-            if result?.isFinal == true {
-                DispatchQueue.main.async {
+                if result?.isFinal == true {
                     self.stopListening()
                 }
             }
@@ -77,6 +75,7 @@ final class SpeechRecognizer {
             isListening = true
         } catch {
             self.error = "Could not start audio engine: \(error.localizedDescription)"
+            NSLog("SpeechRecognizer: \(error.localizedDescription)")
         }
     }
 

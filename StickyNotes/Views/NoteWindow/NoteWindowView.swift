@@ -13,7 +13,6 @@ struct NoteWindowView: View {
     @State private var audioRecorder = AudioRecorder()
     @State private var speechRecognizer = SpeechRecognizer()
     @State private var showDeleteConfirmation = false
-    /// Tracks where dictation text was inserted so partial results replace in-place
     @State private var dictationAnchor: Int?
     @State private var dictationLength: Int = 0
     @AppStorage("confirmBeforeDelete") private var confirmBeforeDelete = true
@@ -29,8 +28,7 @@ struct NoteWindowView: View {
                         speechRecognizer: speechRecognizer,
                         onDelete: { requestDelete() },
                         onAudioSaved: { data in
-                            note.audioRecordings.append(data)
-                            note.modifiedAt = Date()
+                            note.addAudioRecording(data)
                             try? modelContext.save()
                         },
                         onStartDictation: { startLiveDictation() },
@@ -49,8 +47,7 @@ struct NoteWindowView: View {
                         recordings: note.audioRecordings,
                         audioRecorder: audioRecorder,
                         onDelete: { index in
-                            note.audioRecordings.remove(at: index)
-                            note.modifiedAt = Date()
+                            note.removeAudioRecording(at: index)
                             try? modelContext.save()
                         }
                     )
@@ -60,16 +57,13 @@ struct NoteWindowView: View {
                         noteID: noteID,
                         noteColor: note.noteColor,
                         windowFrame: NSRect(
-                            x: note.windowX,
-                            y: note.windowY,
-                            width: note.windowWidth,
-                            height: note.windowHeight
+                            x: note.windowX, y: note.windowY,
+                            width: note.windowWidth, height: note.windowHeight
                         ),
-                        onWindowFound: { window in
-                            observeWindowChanges(window)
-                        },
+                        onWindowFound: { observeWindowChanges($0) },
                         onClose: {
                             audioRecorder.stopPlayback()
+                            speechRecognizer.stopListening()
                             windowManager.markClosed(noteID)
                             note.isOpen = false
                             saveWindowPosition()
@@ -90,23 +84,25 @@ struct NoteWindowView: View {
         .onAppear { loadNote() }
     }
 
+    // MARK: - Data
+
     private func loadNote() {
         let id = noteID
         let descriptor = FetchDescriptor<StickyNote>(
             predicate: #Predicate { $0.id == id }
         )
-        if let found = try? modelContext.fetch(descriptor).first {
-            self.note = found
-            if let data = found.attributedContentData,
-               let restored = try? NSKeyedUnarchiver.unarchivedObject(
-                   ofClass: NSAttributedString.self,
-                   from: data
-               ) {
+        guard let found = try? modelContext.fetch(descriptor).first else { return }
+        self.note = found
+
+        if let data = found.attributedContentData {
+            let classes = [NSAttributedString.self, NSFont.self, NSColor.self,
+                          NSParagraphStyle.self, NSShadow.self, NSTextAttachment.self]
+            if let restored = try? NSKeyedUnarchiver.unarchivedObject(ofClasses: classes, from: data) as? NSAttributedString {
                 self.attributedText = restored
             }
-            self.plainText = found.plainTextContent
-            windowManager.markOpened(noteID)
         }
+        self.plainText = found.plainTextContent
+        windowManager.markOpened(noteID)
     }
 
     private func saveContent() {
@@ -114,33 +110,32 @@ struct NoteWindowView: View {
         note.plainTextContent = plainText
         note.attributedContentData = try? NSKeyedArchiver.archivedData(
             withRootObject: attributedText,
-            requiringSecureCoding: false
+            requiringSecureCoding: true
         )
         note.modifiedAt = Date()
         try? modelContext.save()
     }
 
+    // MARK: - Window Position
+
     private func saveWindowPosition() {
         guard let note else { return }
-        windowManager.saveWindowFrame(noteID, note: note)
+        if let frame = windowManager.windowFrame(for: noteID) {
+            note.windowX = Double(frame.origin.x)
+            note.windowY = Double(frame.origin.y)
+            note.windowWidth = Double(frame.size.width)
+            note.windowHeight = Double(frame.size.height)
+        }
         try? modelContext.save()
     }
 
     private func observeWindowChanges(_ window: NSWindow) {
         NotificationCenter.default.addObserver(
-            forName: NSWindow.didMoveNotification,
-            object: window,
-            queue: .main
-        ) { _ in
-            saveWindowPositionFromWindow(window)
-        }
+            forName: NSWindow.didMoveNotification, object: window, queue: .main
+        ) { _ in saveWindowPositionFromWindow(window) }
         NotificationCenter.default.addObserver(
-            forName: NSWindow.didResizeNotification,
-            object: window,
-            queue: .main
-        ) { _ in
-            saveWindowPositionFromWindow(window)
-        }
+            forName: NSWindow.didResizeNotification, object: window, queue: .main
+        ) { _ in saveWindowPositionFromWindow(window) }
     }
 
     private func saveWindowPositionFromWindow(_ window: NSWindow) {
@@ -152,14 +147,13 @@ struct NoteWindowView: View {
         note.windowHeight = Double(frame.size.height)
     }
 
+    // MARK: - Dictation
+
     private func startLiveDictation() {
         guard let textView = editorProxy.textView else { return }
-
-        // Record anchor point at current cursor
         let cursor = textView.selectedRange()
         var anchor = cursor.location
 
-        // Add a space before if needed
         if anchor > 0 {
             let prevChar = (textView.string as NSString).substring(with: NSRange(location: anchor - 1, length: 1))
             if prevChar != " " && prevChar != "\n" {
@@ -171,34 +165,29 @@ struct NoteWindowView: View {
         dictationAnchor = anchor
         dictationLength = 0
 
-        // Set up live streaming callback
         speechRecognizer.onPartialResult = { [self] partialText in
             guard let textView = editorProxy.textView,
                   let anchor = dictationAnchor else { return }
-
-            // Replace the previous partial text with the new one
             let replaceRange = NSRange(location: anchor, length: dictationLength)
             textView.insertText(partialText, replacementRange: replaceRange)
             dictationLength = (partialText as NSString).length
-
-            // Move cursor to end of dictated text
             textView.setSelectedRange(NSRange(location: anchor + dictationLength, length: 0))
         }
 
         speechRecognizer.requestAuthorization { authorized in
-            if authorized {
-                speechRecognizer.startListening()
-            }
+            if authorized { speechRecognizer.startListening() }
         }
     }
 
     private func stopLiveDictation() {
-        speechRecognizer.stopListening()
         speechRecognizer.onPartialResult = nil
+        speechRecognizer.stopListening()
         dictationAnchor = nil
         dictationLength = 0
         saveContent()
     }
+
+    // MARK: - Delete
 
     private func requestDelete() {
         if confirmBeforeDelete {
@@ -211,13 +200,9 @@ struct NoteWindowView: View {
     private func deleteNote() {
         guard let note else { return }
         audioRecorder.stopPlayback()
-        windowManager.markClosed(noteID)
+        speechRecognizer.stopListening()
+        windowManager.closeWindow(for: noteID)
         modelContext.delete(note)
         try? modelContext.save()
-        if let window = NSApplication.shared.windows.first(where: {
-            $0.identifier?.rawValue == noteID.uuidString
-        }) {
-            window.close()
-        }
     }
 }

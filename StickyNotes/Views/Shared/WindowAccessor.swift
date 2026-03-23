@@ -43,8 +43,6 @@ struct WindowAccessor: NSViewRepresentable {
 
     class Coordinator: NSObject, NSWindowDelegate {
         let parent: WindowAccessor
-        private var moveObserver: Any?
-        private var resizeObserver: Any?
 
         init(_ parent: WindowAccessor) {
             self.parent = parent
@@ -68,28 +66,17 @@ struct WindowAccessor: NSViewRepresentable {
             }
 
             window.level = .floating
-
             parent.onWindowFound?(window)
         }
 
         func updateWindowAppearance(_ window: NSWindow, color: NoteColor) {
-            let effectiveAppearance = window.effectiveAppearance
-            let isDark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            let isDark = window.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             let bgColor = isDark ? color.darkBackground : color.background
             window.backgroundColor = NSColor(bgColor)
         }
 
         func windowWillClose(_ notification: Notification) {
             parent.onClose?()
-        }
-
-        deinit {
-            if let obs = moveObserver {
-                NotificationCenter.default.removeObserver(obs)
-            }
-            if let obs = resizeObserver {
-                NotificationCenter.default.removeObserver(obs)
-            }
         }
     }
 }

@@ -5,7 +5,6 @@ struct NoteCardView: View {
     let isCollapsed: Bool
     let onOpen: () -> Void
     let onDelete: () -> Void
-    let onToggleCollapse: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -22,6 +21,7 @@ struct NoteCardView: View {
                     Image(systemName: "mic.fill")
                         .font(.system(size: 9))
                         .foregroundStyle(.tertiary)
+                        .accessibilityLabel("Has audio recordings")
                 }
 
                 Text(note.modifiedAt.noteListFormatted)
@@ -29,13 +29,11 @@ struct NoteCardView: View {
                     .foregroundStyle(.tertiary)
             }
 
-            if !isCollapsed {
-                if !note.preview.isEmpty {
-                    Text(note.preview)
-                        .font(.system(size: 12))
-                        .lineLimit(3)
-                        .foregroundStyle(.secondary)
-                }
+            if !isCollapsed && !note.preview.isEmpty {
+                Text(note.preview)
+                    .font(.system(size: 12))
+                    .lineLimit(3)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.horizontal, 12)
@@ -52,8 +50,7 @@ struct NoteCardView: View {
             Menu("Color") {
                 ForEach(NoteColor.allCases, id: \.self) { color in
                     Button {
-                        note.noteColor = color
-                        note.modifiedAt = Date()
+                        note.setColor(color)
                     } label: {
                         HStack {
                             Image(systemName: note.noteColor == color ? "checkmark.circle.fill" : "circle.fill")

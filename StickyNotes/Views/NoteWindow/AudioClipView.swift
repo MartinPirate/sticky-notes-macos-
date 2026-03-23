@@ -4,7 +4,9 @@ struct AudioClipView: View {
     let recordings: [Data]
     let audioRecorder: AudioRecorder
     let onDelete: (Int) -> Void
-    @Environment(\.colorScheme) private var colorScheme
+
+    /// Fixed waveform heights generated once, not on every render
+    private static let waveformHeights: [CGFloat] = (0..<12).map { _ in CGFloat.random(in: 4...16) }
 
     var body: some View {
         if !recordings.isEmpty {
@@ -34,8 +36,8 @@ struct AudioClipView: View {
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(audioRecorder.isPlaying && audioRecorder.playingIndex == index ? "Stop" : "Play")
 
-            // Waveform placeholder
             RoundedRectangle(cornerRadius: 2)
                 .fill(.primary.opacity(0.15))
                 .frame(height: 20)
@@ -44,35 +46,28 @@ struct AudioClipView: View {
                         ForEach(0..<12, id: \.self) { i in
                             RoundedRectangle(cornerRadius: 1)
                                 .fill(.primary.opacity(0.4))
-                                .frame(width: 2, height: CGFloat.random(in: 4...16))
+                                .frame(width: 2, height: Self.waveformHeights[i])
                         }
                     }
                 )
 
             if let duration = audioRecorder.durationOf(data: data) {
-                Text(formatDuration(duration))
+                Text(duration.formattedDuration)
                     .font(.system(size: 10, design: .monospaced))
                     .foregroundStyle(.secondary)
             }
 
-            Button {
-                onDelete(index)
-            } label: {
+            Button { onDelete(index) } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Delete recording")
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 6))
-    }
-
-    private func formatDuration(_ duration: TimeInterval) -> String {
-        let mins = Int(duration) / 60
-        let secs = Int(duration) % 60
-        return String(format: "%d:%02d", mins, secs)
     }
 }

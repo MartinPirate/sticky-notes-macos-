@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 
+@MainActor
 @Observable
 final class WindowManager {
     private(set) var openNoteIDs: Set<UUID> = []
@@ -18,24 +19,20 @@ final class WindowManager {
     }
 
     func bringToFront(_ id: UUID) {
-        for window in NSApplication.shared.windows {
-            if window.identifier?.rawValue == id.uuidString {
-                window.makeKeyAndOrderFront(nil)
-                return
-            }
-        }
+        findWindow(for: id)?.makeKeyAndOrderFront(nil)
     }
 
-    func saveWindowFrame(_ id: UUID, note: StickyNote) {
-        for window in NSApplication.shared.windows {
-            if window.identifier?.rawValue == id.uuidString {
-                let frame = window.frame
-                note.windowX = Double(frame.origin.x)
-                note.windowY = Double(frame.origin.y)
-                note.windowWidth = Double(frame.size.width)
-                note.windowHeight = Double(frame.size.height)
-                return
-            }
-        }
+    func closeWindow(for id: UUID) {
+        findWindow(for: id)?.close()
+        markClosed(id)
+    }
+
+    func windowFrame(for id: UUID) -> NSRect? {
+        findWindow(for: id)?.frame
+    }
+
+    private func findWindow(for id: UUID) -> NSWindow? {
+        let windows = NSApplication.shared.windows
+        return windows.first { $0.identifier?.rawValue == id.uuidString }
     }
 }

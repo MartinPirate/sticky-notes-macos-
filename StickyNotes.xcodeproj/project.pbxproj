@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0B7C6C5DC2A1CF6261B12919 /* AudioClipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95B31B727D6F6185EC084A4 /* AudioClipView.swift */; };
+		1B0611F2DD666C3F1E806500 /* DurationFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30F40E07E43105C8EAC7BB02 /* DurationFormatting.swift */; };
 		1CB95E103FB9210DFEBEB993 /* DateFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22253EDED58982293A39106F /* DateFormatting.swift */; };
 		22D4EA9CD3503AD33D946692 /* AudioRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE343E8B78ABF1CA38745D9C /* AudioRecorder.swift */; };
 		25F8D03BFFB6FB179A74167A /* WindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA4CAE13354C9E6012AA1457 /* WindowManager.swift */; };
@@ -37,6 +38,7 @@
 		22253EDED58982293A39106F /* DateFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatting.swift; sourceTree = "<group>"; };
 		2297900470B900CA99A1EE23 /* ColorExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtensions.swift; sourceTree = "<group>"; };
 		24EEB5AEB946542708814690 /* StickyNotes.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StickyNotes.entitlements; sourceTree = "<group>"; };
+		30F40E07E43105C8EAC7BB02 /* DurationFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationFormatting.swift; sourceTree = "<group>"; };
 		330DBE45BB9D76027DFFCD95 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		4723B0D0D563B40BF0AD7211 /* NoteToolbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteToolbarView.swift; sourceTree = "<group>"; };
 		48F7FAD50DF90DD24DBFF35A /* StickyNotes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StickyNotes.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -144,6 +146,7 @@
 			children = (
 				2297900470B900CA99A1EE23 /* ColorExtensions.swift */,
 				22253EDED58982293A39106F /* DateFormatting.swift */,
+				30F40E07E43105C8EAC7BB02 /* DurationFormatting.swift */,
 				815FBA6DADF12E5FC41F5DEF /* URLDetector.swift */,
 			);
 			path = Utilities;
@@ -249,6 +252,7 @@
 				550F496734439B63A09B88EF /* ColorExtensions.swift in Sources */,
 				6294487BC7E6D4BD155FD2A7 /* ColorPickerMenu.swift in Sources */,
 				1CB95E103FB9210DFEBEB993 /* DateFormatting.swift in Sources */,
+				1B0611F2DD666C3F1E806500 /* DurationFormatting.swift in Sources */,
 				C7E92EC7346610FB86681445 /* FormattingBar.swift in Sources */,
 				7D3F027AF4546422847A0E24 /* NoteCardView.swift in Sources */,
 				7B5A35F39F2C3202EE6CFBD6 /* NoteColor.swift in Sources */,
