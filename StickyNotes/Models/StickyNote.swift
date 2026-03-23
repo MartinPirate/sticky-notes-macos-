@@ -23,14 +23,43 @@ final class StickyNote {
         set { colorRawValue = newValue.rawValue }
     }
 
+    /// Plain text with hidden ranges replaced by "•••"
+    private var redactedText: String {
+        guard let data = attributedContentData,
+              let attrStr = try? NSKeyedUnarchiver.unarchivedObject(
+                  ofClasses: [NSAttributedString.self, NSFont.self, NSColor.self,
+                              NSParagraphStyle.self, NSShadow.self, NSTextAttachment.self],
+                  from: data
+              ) as? NSAttributedString else {
+            return plainTextContent
+        }
+
+        var result = plainTextContent
+        let hiddenKey = NSAttributedString.Key("com.stickynotes.hiddenText")
+        var hiddenRanges: [NSRange] = []
+
+        attrStr.enumerateAttribute(hiddenKey, in: NSRange(location: 0, length: attrStr.length)) { value, range, _ in
+            if value as? Bool == true {
+                hiddenRanges.append(range)
+            }
+        }
+
+        // Replace in reverse order so indices stay valid
+        for range in hiddenRanges.reversed() {
+            guard let swiftRange = Range(range, in: result) else { continue }
+            result.replaceSubrange(swiftRange, with: "•••")
+        }
+        return result
+    }
+
     var title: String {
-        let firstLine = plainTextContent.components(separatedBy: .newlines).first ?? ""
+        let firstLine = redactedText.components(separatedBy: .newlines).first ?? ""
         let trimmed = firstLine.trimmingCharacters(in: .whitespaces)
         return trimmed.isEmpty ? "New Note" : String(trimmed.prefix(100))
     }
 
     var preview: String {
-        let lines = plainTextContent.components(separatedBy: .newlines)
+        let lines = redactedText.components(separatedBy: .newlines)
         let remaining = lines.dropFirst().joined(separator: " ").trimmingCharacters(in: .whitespaces)
         return String(remaining.prefix(200))
     }
@@ -61,7 +90,7 @@ final class StickyNote {
         self.audioRecordings = []
     }
 
-    // MARK: - Mutations (centralized to avoid scattered state changes)
+    // MARK: - Mutations
 
     func setColor(_ color: NoteColor) {
         noteColor = color

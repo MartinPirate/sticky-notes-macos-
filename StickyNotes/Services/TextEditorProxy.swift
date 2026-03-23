@@ -177,9 +177,10 @@ final class TextEditorProxy {
             storage.removeAttribute(.backgroundColor, range: range)
             storage.addAttribute(.foregroundColor, value: NSColor.textColor, range: range)
         } else {
+            let blockColor = NSColor(white: 0.15, alpha: 1.0)
             storage.addAttribute(.hiddenText, value: true, range: range)
-            storage.addAttribute(.backgroundColor, value: NSColor.labelColor, range: range)
-            storage.addAttribute(.foregroundColor, value: NSColor.labelColor, range: range)
+            storage.addAttribute(.backgroundColor, value: blockColor, range: range)
+            storage.addAttribute(.foregroundColor, value: blockColor, range: range)
         }
         storage.endEditing()
         textView.setSelectedRange(NSRange(location: range.location + range.length, length: 0))
