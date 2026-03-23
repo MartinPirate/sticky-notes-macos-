@@ -1,13 +1,31 @@
 import SwiftUI
 import SwiftData
 
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Keep app alive when the notes list window is closed
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
+    }
+
+    /// Re-open the notes list when clicking the dock icon with no windows visible
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            // Re-show any existing list window, or SwiftUI will create a new one
+            for window in sender.windows where window.title == "Sticky Notes" {
+                window.makeKeyAndOrderFront(nil)
+                return false
+            }
+        }
+        return true
+    }
+}
+
 @main
 struct StickyNotesApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var windowManager = WindowManager()
     @Environment(\.openWindow) private var openWindow
 
-    /// Single shared container so list + note windows share the same data.
-    /// If the schema changed and migration fails, delete the old store and retry.
     let sharedContainer: ModelContainer = {
         let schema = Schema([StickyNote.self])
         let config = ModelConfiguration(schema: schema)
@@ -15,14 +33,9 @@ struct StickyNotesApp: App {
             return try ModelContainer(for: schema, configurations: [config])
         } catch {
             NSLog("ModelContainer failed, resetting store: \(error)")
-            // Delete the old incompatible store
             let storeURL = config.url
-            let related = [
-                storeURL,
-                storeURL.appendingPathExtension("wal"),
-                storeURL.appendingPathExtension("shm")
-            ]
-            for url in related {
+            for ext in ["", ".wal", ".shm"] {
+                let url = ext.isEmpty ? storeURL : storeURL.appendingPathExtension(ext)
                 try? FileManager.default.removeItem(at: url)
             }
             do {
